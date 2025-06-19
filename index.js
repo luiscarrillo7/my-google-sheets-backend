@@ -16,7 +16,7 @@ app.use(express.json());
 // IMPORTANTE: Reemplaza 'https://tu-frontend.onrender.com' con la URL REAL de tu frontend cuando la tengas.
 // Para desarrollo local, http://localhost:PORT_DEL_FRONTEND es importante.
 const allowedOrigins = [
-    'https://tu-frontend.onrender.com', // ¡CÁMBIAME A LA URL DE TU FRONTEND EN RENDER!
+    'https://my-sheets-frontend.onrender.com', // ¡CÁMBIAME A LA URL DE TU FRONTEND EN RENDER!
     'http://localhost:5000',             // Ejemplo para tu frontend local (si lo corres en el puerto 5000 con `serve`)
     'http://localhost:3001'              // Otro ejemplo si usas otro puerto para el frontend local
 ];
