@@ -15,7 +15,12 @@ const GOOGLE_SHEET_NAME_DATOS = process.env.GOOGLE_SHEET_NAME_DATOS || 'Hoja1';
 const allowedOrigins = [
     'https://my-sheets-frontend.onrender.com',
     'http://localhost:5000',
-    'http://localhost:3000'
+    'http://localhost:3000',
+     'https://capacitacion-dirisle.googlesites.cloud', // ¡AÑADE TU NUEVO DOMINIO AQUÍ!
+    'https://www.capacitacion-dirisle.googlesites.cloud', // Y si usas 'www', también añádelo
+      'https://prueba.googlesites.cloud', // ¡AÑADE TU NUEVO DOMINIO AQUÍ!
+    'https://prueba.googlesites.cloud' // Y si usas 'www', también añádelo
+
 ];
 
 app.use(cors({
