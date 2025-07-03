@@ -86,11 +86,11 @@ app.post('/api/check-user', async (req, res) => {
                 const idUsuario = foundUser[1] || ''; // Columna B (donde está el ID numérico)
                 const nombre = foundUser[2] || ''; // Columna C (Nombre Completo)
                 const cargo = foundUser[3] || ''; // Columna D (Cargo)
-                const eess = foundUser[4] || ''; // Columna E (EESS)
-                const ris = foundUser[5] || ''; // Columna F (RIS)
+                const eess = foundUser[5] || ''; // Columna E (EESS)
+                const ris = foundUser[6] || ''; // Columna F (RIS)
                 // foundUser[6] hasta foundUser[10] serían columnas G, H, I, J, K - las omitimos si no son relevantes
-                const horas = foundUser[11] || ''; // Columna L (Horas/Fecha)
-                const puntaje = foundUser[12] || ''; // Columna M (Puntaje)
+                const horas = foundUser[12] || ''; // Columna L (Horas/Fecha)
+                const puntaje = foundUser[13] || ''; // Columna M (Puntaje)
 
                 // **** Envío de todos los campos ****
                 return res.json({
