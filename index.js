@@ -16,11 +16,10 @@ const allowedOrigins = [
     'https://my-sheets-frontend.onrender.com',
     'http://localhost:5000',
     'http://localhost:3000',
-     'https://capacitacion-dirisle.googlesites.cloud', // ¡AÑADE TU NUEVO DOMINIO AQUÍ!
-    'https://www.capacitacion-dirisle.googlesites.cloud', // Y si usas 'www', también añádelo
-      'https://prueba.googlesites.cloud', // ¡AÑADE TU NUEVO DOMINIO AQUÍ!
-    'https://prueba.googlesites.cloud' // Y si usas 'www', también añádelo
-
+    'https://capacitacion-dirisle.googlesites.cloud',
+    'https://www.capacitacion-dirisle.googlesites.cloud',
+    'https://prueba.googlesites.cloud',
+    'https://prueba.googlesites.cloud'
 ];
 
 app.use(cors({
@@ -49,7 +48,11 @@ async function getAuthClient() {
 app.post('/api/check-user', async (req, res) => {
     const { valor } = req.body;
 
+    // Log para ver el valor recibido en el backend
+    console.log('Backend: Recibida solicitud para /api/check-user. Valor enviado:', valor);
+
     if (!valor) {
+        console.log('Backend: Valor vacío. Devolviendo error 400.');
         return res.status(400).json({ message: 'El campo "valor" es requerido.' });
     }
 
@@ -57,52 +60,53 @@ app.post('/api/check-user', async (req, res) => {
         const auth = await getAuthClient();
         const sheets = google.sheets({ version: 'v4', auth });
 
-        // **** CAMBIO CLAVE AQUÍ: Rango de A a M ****
         const responseDatos = await sheets.spreadsheets.values.get({
             spreadsheetId: GOOGLE_SHEET_ID_DATOS,
-            range: `${GOOGLE_SHEET_NAME_DATOS}!A:M`, // Ahora leeremos hasta la columna M
+            range: `${GOOGLE_SHEET_NAME_DATOS}!A:M`,
         });
 
         const rows = responseDatos.data.values;
+        // Log para ver todos los datos leídos de la hoja
+        console.log('Backend: Datos leídos de la hoja de cálculo:', rows);
 
-        if (rows && rows.length > 0) { // Asegúrate de que haya filas y que no sea solo el encabezado
-            // Opcional: Saltar la fila de encabezado si siempre está presente y no quieres buscar ahí
-            const dataRows = rows.slice(1); // Si la fila 1 es siempre el encabezado, empieza desde la fila 2
+        if (rows && rows.length > 0) {
+            const dataRows = rows.slice(1);
 
-            const foundUser = dataRows.find(row => row[0] === valor); // Busca en columna A (índice 0)
+            const foundUser = dataRows.find(row => {
+                // Log para cada comparación
+                console.log(`Backend: Comparando '${row[0]}' (hoja) con '${valor}' (recibido)`);
+                return row[0] === valor;
+            });
 
             if (foundUser) {
-                // **** EXTRACCIÓN DE DATOS DE LAS NUEVAS COLUMNAS ****
-                // Asegúrate de que cada campo exista antes de intentar acceder a él, o proporciona un valor por defecto
-                const idUsuario = foundUser[0] || ''; // Columna A
-                const nombre = foundUser[1] || ''; // Columna B (que es el "NOMBRE" según tu imagen)
-                const cargo = foundUser[2] || ''; // Columna C
-                // foundUser[3] sería Columna D (Unnamed) - la omitimos
-                const eess = foundUser[4] || ''; // Columna E
-                const ris = foundUser[5] || ''; // Columna F
-                // foundUser[6] hasta foundUser[10] serían columnas G, H, I, J, K - las omitimos
-                const horas = foundUser[11] || ''; // Columna L
-                const puntaje = foundUser[12] || ''; // Columna M
+                console.log('Backend: Usuario encontrado en la hoja de cálculo.');
+                const idUsuario = foundUser[0] || '';
+                const nombre = foundUser[1] || '';
+                const cargo = foundUser[2] || '';
+                const eess = foundUser[4] || '';
+                const ris = foundUser[5] || '';
+                const horas = foundUser[11] || '';
+                const puntaje = foundUser[12] || '';
 
-                // **** CAMBIO AQUÍ: Envío de todos los nuevos campos ****
                 return res.json({
                     exists: true,
                     message: 'Usuario existe.',
-                    idUsuario, // Este es el valor buscado
-                    nombre,    // Columna B
-                    cargo,     // Columna C
-                    eess,      // Columna E
-                    ris,       // Columna F
-                    horas,     // Columna L
-                    puntaje    // Columna M
+                    idUsuario,
+                    nombre,
+                    cargo,
+                    eess,
+                    ris,
+                    horas,
+                    puntaje
                 });
             }
         }
 
+        console.log('Backend: Usuario no encontrado en la hoja de cálculo.');
         return res.json({ exists: false, message: 'Usuario no encontrado.' });
 
     } catch (error) {
-        console.error('Error al acceder a Google Sheet:', error.message, error.stack);
+        console.error('Backend: Error al acceder a Google Sheet:', error.message, error.stack);
         return res.status(500).json({ message: 'Error interno del servidor al verificar el usuario.' });
     }
 });
