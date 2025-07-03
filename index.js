@@ -48,7 +48,19 @@ async function getAuthClient() {
 app.post('/api/check-user', async (req, res) => {
     const { valor } = req.body;
 
-    console.log('Backend: Recibida solicitud para /api/check-user. Valor enviado:', valor);
+    // --- CÓDIGO AÑADIDO/MODIFICADO PARA CAPTURAR INFORMACIÓN DE LA SOLICITUD ---
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    const referer = req.headers['referer'] || 'N/A'; // De dónde vino la solicitud (URL del frontend)
+
+    console.log('Backend: =========================================');
+    console.log(`Backend: Nueva solicitud recibida.`);
+    console.log(`Backend: IP del cliente: ${clientIp}`);
+    console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`);
+    console.log(`Backend: Referer (Origen de la solicitud): ${referer}`);
+    console.log(`Backend: Valor enviado en el cuerpo de la solicitud: ${valor}`);
+    console.log('Backend: =========================================');
+    // --- FIN DEL CÓDIGO AÑADIDO/MODIFICADO ---
 
     if (!valor) {
         console.log('Backend: Valor vacío. Devolviendo error 400.');
@@ -59,13 +71,13 @@ app.post('/api/check-user', async (req, res) => {
         const auth = await getAuthClient();
         const sheets = google.sheets({ version: 'v4', auth });
 
-        // Rango de A a N
         const responseDatos = await sheets.spreadsheets.values.get({
             spreadsheetId: GOOGLE_SHEET_ID_DATOS,
-            range: `${GOOGLE_SHEET_NAME_DATOS}!A:N`, // Leeremos hasta la columna N
+            range: `${GOOGLE_SHEET_NAME_DATOS}!A:N`,
         });
 
         const rows = responseDatos.data.values;
+        // Mantenemos este log para ver los datos completos de la hoja
         console.log('Backend: Datos leídos de la hoja de cálculo (incluyendo encabezados):', rows);
 
         if (rows && rows.length > 0) {
@@ -74,29 +86,27 @@ app.post('/api/check-user', async (req, res) => {
             const foundUser = dataRows.find(row => (row[1] || '').trim() === valor.trim());
 
             if (foundUser) {
+                // Mantenemos este log para ver el usuario encontrado
                 console.log('Backend: Usuario encontrado en la hoja de cálculo:', foundUser);
 
-                const idUsuario = foundUser[1] || '';    // Columna B
-                const nombre = foundUser[2] || '';       // Columna C
-                const cargo = foundUser[3] || '';        // Columna D
-                // Columna E (foundUser[4]) se ignora
-                const eess = foundUser[5] || '';         // Columna F (Nombre de la EESS) - Renombrado de eessNombre a eess
-                const ris = foundUser[6] || '';          // Columna G
-                // Columnas H, I, J, K (foundUser[7] a foundUser[10]) se ignoran
-                const horas = foundUser[12] || '';       // Columna M - ¡CAMBIO DE ÍNDICE Y DE DATO ESPERADO!
-                const puntaje = foundUser[13] || '';     // Columna N - ¡CAMBIO DE ÍNDICE Y DE DATO ESPERADO!
+                const idUsuario = foundUser[1] || '';
+                const nombre = foundUser[2] || '';
+                const cargo = foundUser[3] || '';
+                const eess = foundUser[5] || '';
+                const ris = foundUser[6] || '';
+                const horas = foundUser[12] || '';
+                const puntaje = foundUser[13] || '';
 
-                // Envío SOLO los campos deseados (B, C, D, F, G, M, N)
                 return res.json({
                     exists: true,
                     message: 'Usuario existe.',
                     idUsuario,
                     nombre,
                     cargo,
-                    eess,     // Ahora este es el nombre de la EESS de la Columna F
+                    eess,
                     ris,
-                    horas,    // Dato de Columna M
-                    puntaje   // Dato de Columna N
+                    horas,
+                    puntaje
                 });
             }
         }
