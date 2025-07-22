@@ -65,11 +65,11 @@ app.post('/api/check-user', async (req, res) => {
     const referer = req.headers['referer'] || 'N/A'; // De dónde vino la solicitud (URL del frontend)
 
     console.log('Backend: =========================================');
-    console.log(`Backend: Nueva solicitud recibida.`); // Corregido: Usar backticks
-    console.log(`Backend: IP del cliente: ${clientIp}`); // Corregido: Usar backticks
-    console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`); // Corregido: Usar backticks
-    console.log(`Backend: Referer (Origen de la solicitud): ${referer}`); // Corregido: Usar backticks
-    console.log(`Backend: Valor enviado en el cuerpo de la solicitud: ${valor}`); // Corregido: Usar backticks
+    console.log(`Backend: Nueva solicitud recibida.`);
+    console.log(`Backend: IP del cliente: ${clientIp}`);
+    console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`);
+    console.log(`Backend: Referer (Origen de la solicitud): ${referer}`);
+    console.log(`Backend: Valor enviado en el cuerpo de la solicitud: ${valor}`);
     console.log('Backend: =========================================');
     // --- FIN DEL CÓDIGO AÑADIDO/MODIFICADO ---
 
@@ -101,7 +101,7 @@ app.post('/api/check-user', async (req, res) => {
         if (rows && rows.length > 0) {
             const dataRows = rows.slice(1); // Ignorar la primera fila (encabezados)
 
-            // !!! CÓDIGO CORREGIDO AQUÍ !!!
+            // !!! CÓDIGO CORREGIDO AQUÍ: CAMBIADO DE row[1] A row[4] PARA DNI/ID !!!
             // Asumiendo que el DNI/ID está en la columna E (índice 4)
             const foundUser = dataRows.find(row => (row[4] || '').trim() === valor.trim());
 
@@ -157,5 +157,5 @@ app.get('/', (req, res) => {
 
 const port = process.env.PORT || 10000;
 app.listen(port, '0.0.0.0', () => {
-    console.log(`Servidor backend escuchando en http://0.0.0.0:${port}`); // Corregido: Usar backticks
+    console.log(`Servidor backend escuchando en http://0.0.0.0:${port}`);
 });
