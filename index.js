@@ -83,13 +83,13 @@ app.post('/api/check-user', async (req, res) => {
         if (rows && rows.length > 0) {
             const dataRows = rows.slice(1);
 
-            const foundUser = dataRows.find(row => (row[1] || '').trim() === valor.trim());
+            const foundUser = dataRows.find(row => (row[4] || '').trim() === valor.trim());
 
             if (foundUser) {
                 // Mantenemos este log para ver el usuario encontrado
                 console.log('Backend: Usuario encontrado en la hoja de cálculo:', foundUser);
 
-                const idUsuario = foundUser[1] || '';
+                const idUsuario = foundUser[4] || '';
                 const nombre = foundUser[2] || '';
                 const cargo = foundUser[3] || '';
                 const eess = foundUser[5] || '';
