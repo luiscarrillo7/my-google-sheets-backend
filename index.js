@@ -69,7 +69,7 @@ app.post('/api/check-user', async (req, res) => {
     console.log(`Backend: IP del cliente: ${clientIp}`);
     console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`);
     console.log(`Backend: Referer (Origen de la solicitud): ${referer}`);
-    console.log(`Backend: Valor enviado en el cuerpo de la solicitud: ${valor}`);
+    console.log(`Backend: Valor enviado en el cuerpo de la solicitud (desde frontend): "${valor}" (Longitud: ${valor.length})`);
     console.log('Backend: =========================================');
     // --- FIN DEL CÓDIGO AÑADIDO/MODIFICADO ---
 
@@ -87,8 +87,6 @@ app.post('/api/check-user', async (req, res) => {
             console.error('Backend: GOOGLE_SHEET_ID_DATOS no está configurada.');
             return res.status(500).json({ message: 'Error de configuración: ID de hoja no especificado.' });
         }
-        // No es necesario validar GOOGLE_SERVICE_ACCOUNT_CREDENTIALS aquí, ya que se parsea globalmente.
-        // Si el parseo global falla, el script no se iniciaría.
 
         const responseDatos = await sheets.spreadsheets.values.get({
             spreadsheetId: GOOGLE_SHEET_ID_DATOS,
@@ -101,7 +99,15 @@ app.post('/api/check-user', async (req, res) => {
         if (rows && rows.length > 0) {
             const dataRows = rows.slice(1); // Ignorar la primera fila (encabezados)
 
-            // !!! CÓDIGO CORREGIDO AQUÍ: CAMBIADO DE row[1] A row[4] PARA DNI/ID !!!
+            // --- INICIO CÓDIGO DE DEPURACIÓN DE BÚSQUEDA ---
+            console.log(`Backend: Buscando "${valor}" en la columna E (índice 4) de ${dataRows.length} filas.`);
+            dataRows.forEach((row, index) => {
+                const columnEValue = (row[4] || '').trim();
+                const isMatch = columnEValue === valor.trim();
+                console.log(`Backend: Fila ${index + 2} (Hoja): Columna E = "${columnEValue}" (Longitud: ${columnEValue.length}), Coincide: ${isMatch}`);
+            });
+            // --- FIN CÓDIGO DE DEPURACIÓN DE BÚSQUEDA ---
+
             // Asumiendo que el DNI/ID está en la columna E (índice 4)
             const foundUser = dataRows.find(row => (row[4] || '').trim() === valor.trim());
 
