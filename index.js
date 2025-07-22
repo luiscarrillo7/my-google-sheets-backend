@@ -69,7 +69,11 @@ app.post('/api/check-user', async (req, res) => {
     console.log(`Backend: IP del cliente: ${clientIp}`);
     console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`);
     console.log(`Backend: Referer (Origen de la solicitud): ${referer}`);
-    console.log(`Backend: Valor enviado en el cuerpo de la solicitud (desde frontend): "${valor}" (Longitud: ${valor.length})`);
+    // Asegurar que 'valor' es una cadena y aplicar trim()
+    const cleanedValorInput = String(valor).trim();
+    const numValorInput = parseInt(cleanedValorInput, 10);
+
+    console.log(`Backend: Valor enviado en el cuerpo de la solicitud (desde frontend): "${cleanedValorInput}" (Longitud: ${cleanedValorInput.length}, Num: ${isNaN(numValorInput) ? 'N/A' : numValorInput})`);
     console.log('Backend: =========================================');
     // --- FIN DEL CÓDIGO AÑADIDO/MODIFICADO ---
 
@@ -99,25 +103,46 @@ app.post('/api/check-user', async (req, res) => {
         if (rows && rows.length > 0) {
             const dataRows = rows.slice(1); // Ignorar la primera fila (encabezados)
 
-            // --- INICIO CÓDIGO DE DEPURACIÓN DE BÚSQUEDA ---
-            console.log(`Backend: Buscando "${valor}" en la columna E (índice 4) de ${dataRows.length} filas.`);
-            dataRows.forEach((row, index) => {
-                const columnEValue = (row[4] || '').trim();
-                const isMatch = columnEValue === valor.trim();
-                console.log(`Backend: Fila ${index + 2} (Hoja): Columna E = "${columnEValue}" (Longitud: ${columnEValue.length}), Coincide: ${isMatch}`);
-            });
-            // --- FIN CÓDIGO DE DEPURACIÓN DE BÚSQUEDA ---
+            // --- INICIO CÓDIGO DE DEPURACIÓN Y BÚSQUEDA MEJORADA ---
+            // AHORA BUSCAMOS EN LA COLUMNA C (ÍNDICE 2) PARA EL DNI PRINCIPAL
+            console.log(`Backend: Buscando "${cleanedValorInput}" en la columna C (índice 2) de ${dataRows.length} filas.`);
+            
+            const foundUser = dataRows.find((row, index) => {
+                const rawColumnCValue = row[2]; // Acceder a la columna C (índice 2)
+                const columnCValue = (rawColumnCValue || '').trim();
+                const numColumnCValue = parseInt(columnCValue, 10);
 
-            // Asumiendo que el DNI/ID está en la columna E (índice 4)
-            const foundUser = dataRows.find(row => (row[4] || '').trim() === valor.trim());
+                let isMatch = false;
+                let matchType = 'String'; // Por defecto, tipo de coincidencia es String
+
+                // Intentar coincidencia numérica si ambos son números válidos
+                if (!isNaN(numValorInput) && !isNaN(numColumnCValue)) {
+                    isMatch = numColumnCValue === numValorInput;
+                    matchType = 'Number';
+                } else {
+                    // Si no son numéricos o no se pueden parsear, usar coincidencia de cadena
+                    isMatch = columnCValue === cleanedValorInput;
+                }
+                
+                console.log(`Backend: Fila ${index + 2} (Hoja): Columna C = "${columnCValue}" (Longitud: ${columnCValue.length}, Num: ${isNaN(numColumnCValue) ? 'N/A' : numColumnCValue}), Coincide (${matchType}): ${isMatch}`);
+                return isMatch; // Retorna el resultado de la coincidencia para el método find
+            });
+            // --- FIN CÓDIGO DE DEPURACIÓN Y BÚSQUEDA MEJORADA ---
 
             if (foundUser) {
                 console.log('Backend: Usuario encontrado en la hoja de cálculo:', foundUser);
 
                 // Ajusta los índices de columna según la posición real en tu hoja
-                const idUsuario = foundUser[4] || ''; // Columna E (DNI/ID)
-                const nombre = foundUser[2] || ''; // Columna C (Nombre)
-                const cargo = foundUser[3] || ''; // Columna D (Cargo)
+                // DNI: Columna C (índice 2)
+                // Nombre: Columna D (índice 3)
+                // Cargo: Columna E (índice 4)
+                // EESS: Columna F (índice 5)
+                // RIS: Columna G (índice 6)
+                // Horas: Columna M (índice 12)
+                // Puntaje: Columna N (índice 13)
+                const idUsuario = foundUser[2] || ''; // Columna C (DNI)
+                const nombre = foundUser[3] || ''; // Columna D (Nombre)
+                const cargo = foundUser[4] || ''; // Columna E (Cargo)
                 const eess = foundUser[5] || ''; // Columna F (EESS)
                 const ris = foundUser[6] || ''; // Columna G (RIS)
                 const horas = foundUser[12] || ''; // Columna M (Horas)
