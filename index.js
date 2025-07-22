@@ -9,10 +9,6 @@ const cors = require('cors'); // Importa el paquete CORS
 
 const app = express();
 
-// NOTA: Estas variables ahora se obtienen directamente del process.env
-// y se parsean en la función getAuthClient o en el endpoint.
-// No deben ser globales aquí si dependen de process.env en Render.
-
 // --- Configuración de CORS ---
 // Define los orígenes permitidos para las solicitudes CORS.
 // Es crucial que el dominio de origen (Origin) sea exactamente el de tu frontend.
@@ -46,6 +42,8 @@ app.use(express.json());
 
 // Función para obtener el cliente de autenticación de Google
 async function getAuthClient() {
+    // Mover la inicialización de las credenciales aquí para que se haga de forma segura
+    // cuando la función es llamada, y no globalmente al inicio del script.
     const base64Json = process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64;
     const encodingType = process.env.ENCODING_TYPE || 'utf8'; // Asegúrate de que ENCODING_TYPE esté definido en Render si no es utf8
 
@@ -53,8 +51,13 @@ async function getAuthClient() {
         throw new Error('GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64 no está configurada.');
     }
 
-    const jsonString = Buffer.from(base64Json, 'base64').toString(encodingType);
-    const credentials = JSON.parse(jsonString);
+    let credentials;
+    try {
+        const jsonString = Buffer.from(base64Json, 'base64').toString(encodingType);
+        credentials = JSON.parse(jsonString);
+    } catch (parseError) {
+        throw new Error(`Error al parsear las credenciales de la cuenta de servicio: ${parseError.message}`);
+    }
 
     const auth = new google.auth.GoogleAuth({
         credentials: credentials,
@@ -86,9 +89,10 @@ app.post('/api/check-user', async (req, res) => {
     }
 
     try {
-        const auth = await getAuthClient();
+        const auth = await getAuthClient(); // Aquí se obtienen y parsean las credenciales
         const sheets = google.sheets({ version: 'v4', auth });
 
+        // Acceder a las variables de entorno para los IDs de hoja dentro de la ruta
         const GOOGLE_SHEET_ID_DATOS = process.env.GOOGLE_SHEET_ID_DATOS;
         const GOOGLE_SHEET_NAME_DATOS = process.env.GOOGLE_SHEET_NAME_DATOS || 'Hoja1';
 
@@ -144,7 +148,10 @@ app.post('/api/check-user', async (req, res) => {
         console.error('Backend: Error al acceder a Google Sheet:', error.message, error.stack);
         // Detalles adicionales del error para depuración
         let errorMessage = 'Error interno del servidor al verificar el usuario.';
-        if (error.code) {
+        // Si el error es por credenciales, podemos dar un mensaje más específico
+        if (error.message.includes('GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64') || error.message.includes('parsear las credenciales')) {
+            errorMessage = `Error de configuración de credenciales: ${error.message}. Asegúrate de que GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64 sea un JSON Base64 válido.`;
+        } else if (error.code) {
             errorMessage += ` Código de error: ${error.code}.`;
         }
         if (error.errors && error.errors.length > 0) {
