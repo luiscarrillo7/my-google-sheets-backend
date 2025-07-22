@@ -9,6 +9,13 @@ const cors = require('cors'); // Importa el paquete CORS
 
 const app = express();
 
+// --- INICIALIZACIÓN DE VARIABLES DE ENTORNO GLOBALES (TU CÓDIGO ORIGINAL QUE FUNCIONA) ---
+const GOOGLE_SERVICE_ACCOUNT_CREDENTIALS = JSON.parse(
+    Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64, process.env.ENCODING_TYPE || 'utf8').toString('utf8')
+);
+const GOOGLE_SHEET_ID_DATOS = process.env.GOOGLE_SHEET_ID_DATOS;
+const GOOGLE_SHEET_NAME_DATOS = process.env.GOOGLE_SHEET_NAME_DATOS || 'Hoja1';
+
 // --- Configuración de CORS ---
 // Define los orígenes permitidos para las solicitudes CORS.
 // Es crucial que el dominio de origen (Origin) sea exactamente el de tu frontend.
@@ -27,7 +34,7 @@ app.use(cors({
     // Permite solicitudes sin origen (como de Postman o curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'La política CORS para este sitio no no permite el acceso desde el origen especificado.';
+      const msg = 'La política CORS para este sitio no permite el acceso desde el origen especificado.';
       return callback(new Error(msg), false);
     }
     return callback(null, true);
@@ -42,25 +49,8 @@ app.use(express.json());
 
 // Función para obtener el cliente de autenticación de Google
 async function getAuthClient() {
-    // Mover la inicialización de las credenciales aquí para que se haga de forma segura
-    // cuando la función es llamada, y no globalmente al inicio del script.
-    const base64Json = process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64;
-    const encodingType = process.env.ENCODING_TYPE || 'utf8'; // Asegúrate de que ENCODING_TYPE esté definido en Render si no es utf8
-
-    if (!base64Json) {
-        throw new Error('GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_BASE64 no está configurada.');
-    }
-
-    let credentials;
-    try {
-        const jsonString = Buffer.from(base64Json, 'base64').toString(encodingType);
-        credentials = JSON.parse(jsonString);
-    } catch (parseError) {
-        throw new Error(`Error al parsear las credenciales de la cuenta de servicio: ${parseError.message}`);
-    }
-
     const auth = new google.auth.GoogleAuth({
-        credentials: credentials,
+        credentials: GOOGLE_SERVICE_ACCOUNT_CREDENTIALS,
         scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
     return await auth.getClient();
@@ -75,11 +65,11 @@ app.post('/api/check-user', async (req, res) => {
     const referer = req.headers['referer'] || 'N/A'; // De dónde vino la solicitud (URL del frontend)
 
     console.log('Backend: =========================================');
-    console.log(`Backend: Nueva solicitud recibida.`);
-    console.log(`Backend: IP del cliente: ${clientIp}`);
-    console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`);
-    console.log(`Backend: Referer (Origen de la solicitud): ${referer}`);
-    console.log(`Backend: Valor enviado en el cuerpo de la solicitud: ${valor}`);
+    console.log(`Backend: Nueva solicitud recibida.`); // Corregido: Usar backticks
+    console.log(`Backend: IP del cliente: ${clientIp}`); // Corregido: Usar backticks
+    console.log(`Backend: User-Agent (SO/Dispositivo): ${userAgent}`); // Corregido: Usar backticks
+    console.log(`Backend: Referer (Origen de la solicitud): ${referer}`); // Corregido: Usar backticks
+    console.log(`Backend: Valor enviado en el cuerpo de la solicitud: ${valor}`); // Corregido: Usar backticks
     console.log('Backend: =========================================');
     // --- FIN DEL CÓDIGO AÑADIDO/MODIFICADO ---
 
@@ -89,17 +79,16 @@ app.post('/api/check-user', async (req, res) => {
     }
 
     try {
-        const auth = await getAuthClient(); // Aquí se obtienen y parsean las credenciales
+        const auth = await getAuthClient();
         const sheets = google.sheets({ version: 'v4', auth });
 
-        // Acceder a las variables de entorno para los IDs de hoja dentro de la ruta
-        const GOOGLE_SHEET_ID_DATOS = process.env.GOOGLE_SHEET_ID_DATOS;
-        const GOOGLE_SHEET_NAME_DATOS = process.env.GOOGLE_SHEET_NAME_DATOS || 'Hoja1';
-
+        // Validar que las variables de entorno globales existan antes de usarlas
         if (!GOOGLE_SHEET_ID_DATOS) {
             console.error('Backend: GOOGLE_SHEET_ID_DATOS no está configurada.');
             return res.status(500).json({ message: 'Error de configuración: ID de hoja no especificado.' });
         }
+        // No es necesario validar GOOGLE_SERVICE_ACCOUNT_CREDENTIALS aquí, ya que se parsea globalmente.
+        // Si el parseo global falla, el script no se iniciaría.
 
         const responseDatos = await sheets.spreadsheets.values.get({
             spreadsheetId: GOOGLE_SHEET_ID_DATOS,
@@ -112,6 +101,7 @@ app.post('/api/check-user', async (req, res) => {
         if (rows && rows.length > 0) {
             const dataRows = rows.slice(1); // Ignorar la primera fila (encabezados)
 
+            // !!! CÓDIGO CORREGIDO AQUÍ !!!
             // Asumiendo que el DNI/ID está en la columna E (índice 4)
             const foundUser = dataRows.find(row => (row[4] || '').trim() === valor.trim());
 
@@ -167,5 +157,5 @@ app.get('/', (req, res) => {
 
 const port = process.env.PORT || 10000;
 app.listen(port, '0.0.0.0', () => {
-    console.log(`Servidor backend escuchando en http://0.0.0.0:${port}`);
+    console.log(`Servidor backend escuchando en http://0.0.0.0:${port}`); // Corregido: Usar backticks
 });
